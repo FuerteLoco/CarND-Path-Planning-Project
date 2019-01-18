@@ -252,8 +252,10 @@ int main() {
 
             if (prev_path_size > 0) car_s = end_path_s;
             bool too_close = false;
-            vector<double> car_ahead = {999.0, 999.0, 999.0};
-            vector<double> car_behind = {999.0, 999.0, 999.0};
+            vector<double> car_ahead_dist = {999.0, 999.0, 999.0};
+            vector<double> car_behind_dist = {999.0, 999.0, 999.0};
+            vector<double> car_ahead_speed = {999.0, 999.0, 999.0};
+            vector<double> car_behind_speed = {999.0, 999.0, 999.0};
 
             // check all other cars on all lanes
             for (int i=0; i<sensor_fusion.size(); i++)
@@ -270,31 +272,33 @@ int main() {
               if (check_car_s > car_s)
               {
                 // that car is ahead
-                if (car_ahead[check_car_lane] > check_car_s - car_s)
+                if (car_ahead_dist[check_car_lane] > check_car_s - car_s)
                 {
                   // that car is closer than other cars checked before
-                  car_ahead[check_car_lane] = check_car_s - car_s;
+                  car_ahead_dist[check_car_lane] = check_car_s - car_s;
+                  car_ahead_speed[check_car_lane] = check_speed;
                 }
               }
               else
               {
                 // that car is behind
-                if (car_behind[check_car_lane] > car_s - check_car_s)
+                if (car_behind_dist[check_car_lane] > car_s - check_car_s)
                 {
                   // that car is closer than other cars checked before
-                  car_behind[check_car_lane] = car_s - check_car_s;
+                  car_behind_dist[check_car_lane] = car_s - check_car_s;
+                  car_behind_speed[check_car_lane] = check_speed;
                 }
               }
             }
 
             // check if there is a car too close ahead
-            if (car_ahead[lane] < 30.0)
+            if (car_ahead_dist[lane] < 30.0)
             {
               too_close = true;
               // try to find a better lane with no car ahead
-              bool left_lane_possible = (car_ahead[0] > 30.0) && (car_behind[0] > 30.0);
-              bool middle_lane_possible = (car_ahead[1] > 30.0) && (car_behind[1] > 30.0);
-              bool right_lane_possible = (car_ahead[2] > 30.0) && (car_behind[2] > 30.0);
+              bool left_lane_possible = (car_ahead_dist[0] > 30.0) && (car_behind_dist[0] > 10.0);
+              bool middle_lane_possible = (car_ahead_dist[1] > 30.0) && (car_behind_dist[1] > 10.0);
+              bool right_lane_possible = (car_ahead_dist[2] > 30.0) && (car_behind_dist[2] > 10.0);
               if (((lane == 0) || (lane == 2)) && middle_lane_possible)
               {
                 // change to middle lane
@@ -305,7 +309,7 @@ int main() {
                 if (left_lane_possible && right_lane_possible)
                 {
                   // change to better lane
-                  if (car_ahead[0] > car_ahead[2])
+                  if (car_ahead_dist[0] > car_ahead_dist[2])
                   {
                     lane = 0;
                   }
@@ -326,7 +330,7 @@ int main() {
             }
 
             // control speed depending on car ahead and reference speed
-            if (too_close == true)
+            if (too_close && (ref_vel > car_ahead_speed[lane]))
             {
               ref_vel -= 0.224;
             }
